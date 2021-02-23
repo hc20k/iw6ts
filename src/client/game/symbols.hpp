@@ -190,6 +190,9 @@ namespace game
 	WEAK symbol<void*(jmp_buf* Buf, int Value)> longjmp{0x14062E030, 0x140738060};
 	WEAK symbol<int (jmp_buf* Buf)> _setjmp{0x14062F030, 0x140739060};
 
+	WEAK symbol<int (mp::playerState_s*, int, bool, int stock, int clip)> Add_Ammo{ 0, 0x140399e50 };
+	WEAK symbol<void(mp::gentity_s*, mp::gentity_s*, mp::gentity_s*, int, int, unsigned int, bool, float*, int, int)> player_die{ 0, 0x140396920 };
+
 	/***************************************************************
 	 * Variables
 	 **************************************************************/

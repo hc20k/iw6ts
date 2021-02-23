@@ -1259,6 +1259,10 @@ namespace game
 		int currentShowInKillcam;
 	};
 
+	enum hitLocation_t {
+		HITLOC_NONE = 0x0
+	};
+
 	enum scriptType_e
 	{
 		SCRIPT_NONE = 0,
@@ -1522,7 +1526,7 @@ namespace game
 			SlideState slideState;
 			float leanf;
 			PlayerActiveWeaponState weapState[2];
-			int weaponsEquipped[15];
+			Weapon weaponsEquipped[15];
 			PlayerEquippedWeaponState weapEquippedData[15];
 			int offHand;
 			int offhandPrimaryClass;

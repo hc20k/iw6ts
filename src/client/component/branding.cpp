@@ -74,18 +74,21 @@ namespace branding
 
 			scheduler::loop([]()
 			{
-				const auto x = 3;
-				const auto y = 0;
-				const auto scale = 0.5f;
-				float color[4] = {0.666f, 0.666f, 0.666f, 0.666f};
-				const auto* text = "IW6x: " VERSION;
+				if (!game::CL_IsCgameInitialized()) {
+					const auto x = 3;
+					const auto y = 0;
+					const auto scale = 0.5f;
+					float color[4] = { 0.666f, 0.666f, 0.666f, 0.666f };
+					const auto* text = "IW6x: " VERSION " ^:TS";
 
-				auto* font = game::R_RegisterFont("fonts/normalfont");
-				if (!font) return;
+					auto* font = game::R_RegisterFont("fonts/normalfont");
+					if (!font) return;
 
-				game::R_AddCmdDrawText(text, 0x7FFFFFFF, font, static_cast<float>(x),
-				                       y + static_cast<float>(font->pixelHeight) * scale,
-				                       scale, scale, 0.0f, color, 0);
+					game::R_AddCmdDrawText(text, 0x7FFFFFFF, font, static_cast<float>(x),
+						y + static_cast<float>(font->pixelHeight)* scale,
+						scale, scale, 0.0f, color, 0);
+				}
+
 			}, scheduler::pipeline::renderer);
 		}
 	};
