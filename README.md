@@ -10,6 +10,8 @@
 * Improved weapon mechanics `ts_weaponMechanics`
 * Trickshot aimbot `ts_aimbotEnabled`
 * Random classes on spawn `ts_spawnWithRandomClass`
+* Infinite bullet penetration
+* Infinite sniper damage
 
 and more.
 
