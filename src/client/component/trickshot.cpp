@@ -38,6 +38,7 @@ static std::vector<const char*> ts_weaponMech_values =
 {
 	"iw6",
 	"iw6 (improved)",
+	"iw4",
 	nullptr,
 };
 
@@ -69,11 +70,15 @@ namespace trickshot {
 			return 9999.f;
 		}
 
+		bool call_Bot_CombatStateGrenade(unsigned int* p1, usercmd_s* cmd) {
+			return 0;
+		}
+
 		void patch_bots() {
 			utils::hook::nop(0x140463e52, 5); // Bot_UpdateThreat
 			utils::hook::nop(0x140463e62, 5); // Bot_UpdateDistToEnemy
 			utils::hook::set(0x140447d5f, "\xE9"); // Bot_CanSeeEnemy
-			//utils::hook::set(0x1404494f6, "\xEB"); // Bot_CombatStateGrenade
+			utils::hook::call(0x140454fed, call_Bot_CombatStateGrenade);
 		}
 
 		void pregame_setup() {
@@ -127,6 +132,7 @@ namespace trickshot {
 		void Bullet_Endpos(unsigned int* randSeed, float spread, float p3, float* endpoint, float* p5, float p6, float p7, weaponParms parms, float p9) {
 			if (ts_noSpreadEnabled->current.enabled) {
 				spread = 0.f;
+				*randSeed = 0;
 			}
 
 			bullet_endpos_hook.invoke<void>(randSeed, spread, p3, endpoint, p5, p6, p7, parms, p9);
@@ -134,11 +140,12 @@ namespace trickshot {
 			if (ts_aimbotEnabled->current.enabled) {
 				float closest_distance = INFINITE;
 
-				if (ts_aimbotHitDistance->current.value != 0) {
+				if (ts_aimbotHitDistance->current.value > 1) {
 					closest_distance = ts_aimbotHitDistance->current.value;
 				}
 
 				mp::gentity_s closest_ent;
+				bool has_closest = false;
 
 				for (int i = 1; i < 32; i++) {
 					mp::gentity_s ent = mp::g_entities[i];
@@ -147,11 +154,12 @@ namespace trickshot {
 						if (vecdist(endpoint, ent.r.origin) < closest_distance) {
 							closest_distance = vecdist(endpoint, ent.r.origin);
 							closest_ent = ent;
+							has_closest = true;
 						}
 					}
 				}
 
-				if (closest_ent.client) {
+				if (has_closest) {
 					veccpy(closest_ent.r.origin, endpoint);
 				}
 			}
@@ -215,6 +223,10 @@ namespace trickshot {
 					case 1: {
 						// improved
 						mechanics::ghosted_mechanics(entity);
+					}
+
+					case 2: {
+						// TODO: iw4
 					}
 
 					default: {
