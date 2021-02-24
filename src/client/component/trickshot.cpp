@@ -18,6 +18,7 @@ utils::hook::detour clientspawn_hook;
 utils::hook::detour bg_getdamage_hook;
 utils::hook::detour sv_maprestart_hook;
 utils::hook::detour bg_getsurfacepenetrationdepth_hook;
+utils::hook::detour bullet_endpos_hook;
 
 vec3_t saved_location = { -1 };
 vec3_t saved_angles = { -1 };
@@ -29,7 +30,9 @@ dvar_t* ts_spawnWithRandomClass;
 dvar_t* ts_showTips;
 dvar_t* ts_botFreedomDist;
 dvar_t* ts_equipmentCanKill;
-
+dvar_t* ts_aimbotEnabled;
+dvar_t* ts_aimbotHitDistance;
+dvar_t* ts_noSpreadEnabled;
 
 static std::vector<const char*> ts_weaponMech_values =
 {
@@ -121,6 +124,40 @@ namespace trickshot {
 			return -1;
 		}
 
+		void Bullet_Endpos(unsigned int* randSeed, float spread, float p3, float* endpoint, float* p5, float p6, float p7, weaponParms parms, float p9) {
+			if (ts_noSpreadEnabled->current.enabled) {
+				spread = 0.f;
+			}
+
+			bullet_endpos_hook.invoke<void>(randSeed, spread, p3, endpoint, p5, p6, p7, parms, p9);
+			
+			if (ts_aimbotEnabled->current.enabled) {
+				float closest_distance = INFINITE;
+
+				if (ts_aimbotHitDistance->current.value != 0) {
+					closest_distance = ts_aimbotHitDistance->current.value;
+				}
+
+				mp::gentity_s closest_ent;
+
+				for (int i = 1; i < 32; i++) {
+					mp::gentity_s ent = mp::g_entities[i];
+
+					if (ent.client && ent.health > 0) {
+						if (vecdist(endpoint, ent.r.origin) < closest_distance) {
+							closest_distance = vecdist(endpoint, ent.r.origin);
+							closest_ent = ent;
+						}
+					}
+				}
+
+				if (closest_ent.client) {
+					veccpy(closest_ent.r.origin, endpoint);
+				}
+			}
+
+		}
+
 		void on_host_death(mp::gentity_s* entity) {
 			game_console::print(0, "host died!");
 		}
@@ -158,8 +195,8 @@ namespace trickshot {
 			entity->client->flags ^= 1; // god mode
 			
 			// Give class 50ms after spawn
-			scheduler::once([]() {
-				if (ts_spawnWithRandomClass->current.enabled)
+			scheduler::once([entity]() {
+				if (ts_spawnWithRandomClass->current.enabled && entity->health > 1)
 					randomize_class();
 			}, scheduler::pipeline::main, std::chrono::duration<int, std::milli>(50ms));
 
@@ -325,6 +362,7 @@ namespace trickshot {
 			clientspawn_hook.create(0x140387b20, ClientSpawn);
 			bg_getdamage_hook.create(0x14023e260, BG_GetDamage);
 			bg_getsurfacepenetrationdepth_hook.create(0x140238fd0, BG_GetSurfacePenetrationDepth);
+			bullet_endpos_hook.create(0x1403762c0, Bullet_Endpos);
 
 			patch_bots();
 
@@ -367,6 +405,9 @@ namespace trickshot {
 			ts_showTips = Dvar_RegisterBool("ts_showTips", true, DVAR_FLAG_SAVED, "Show tutorial.");
 			ts_botFreedomDist = Dvar_RegisterFloat("ts_botFreedomDist", 300.f, 0.f, 1500.f, DVAR_FLAG_SAVED, "The distance the bots can stray away from the saved location without being teleported.");
 			ts_equipmentCanKill = Dvar_RegisterBool("ts_equipmentCanKill", true, DVAR_FLAG_SAVED, "Equipment (e.g. throwing knife) will kill enemies.");
+			ts_aimbotEnabled = Dvar_RegisterBool("ts_aimbotEnabled", false, DVAR_FLAG_SAVED, "Enable trickshot aimbot (silent aim)");
+			ts_aimbotHitDistance = Dvar_RegisterInt("ts_aimbotHitDistance", 0, 0, 5000, DVAR_FLAG_SAVED, "The distance the shot has to miss by to be taken over by the aimbot. 0 = disabled");
+			ts_noSpreadEnabled = Dvar_RegisterBool("ts_noSpreadEnabled", false, DVAR_FLAG_SAVED, "Enable 100% accuracy.");
 
 			localized_strings::override("LUA_MENU_PRIVATE_MATCH_LOBBY", "^:TRICKSHOT");
 			localized_strings::override("LUA_MENU_PRIVATE_MATCH_CAPS", "^:TRICKSHOT");

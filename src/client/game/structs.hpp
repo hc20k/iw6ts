@@ -1040,6 +1040,17 @@ namespace game
 		vec2_t corridorSpeeds;
 	};
 
+	struct weaponParms {
+		vec3_t forward;
+		vec3_t right;
+		vec3_t up;
+		vec3_t muzzleTrace;
+		vec3_t gunForward;
+		Weapon weapon;
+		bool isAlternate;
+
+	};
+
 	struct PlayerActiveWeaponState
 	{
 		int weapAnim;
