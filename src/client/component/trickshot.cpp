@@ -16,7 +16,7 @@ using namespace game;
 
 utils::hook::detour sv_startmap_hook;
 utils::hook::detour clientspawn_hook;
-utils::hook::detour bg_getdamage_hook;
+utils::hook::detour g_damage_hook;
 utils::hook::detour sv_maprestart_hook;
 utils::hook::detour bg_getsurfacepenetrationdepth_hook;
 utils::hook::detour bullet_endpos_hook;
@@ -183,20 +183,13 @@ namespace trickshot {
 			sv_maprestart_hook.invoke<void>(p1, p2);
 		}
 
-		int BG_GetDamage(Weapon weap, bool p2) {
-			auto weaponClass = BG_GetWeaponClass(weap, p2); // BG_GetWeaponClass
-
-			if (weaponClass == 1) {
-				// Sniper
-				return 9999;
+		void G_Damage(mp::gentity_s* target, mp::gentity_s* inflictor, mp::gentity_s* attacker, vec3_t* dir, vec3_t* pt, int damage, int dflags, int meansOfDeath, Weapon weap, bool p10, enum hitLocation_t hitLoc, unsigned int p12, int p13, int p14) {
+			if (BG_GetWeaponClass(weap, true) == 1 || (ts_equipmentCanKill->current.enabled && BG_GetWeaponClass(weap, true) == 9)) {
+				damage = 9999;
 			}
+			else { return; }
 
-			if (ts_equipmentCanKill->current.enabled && weaponClass == 9) {
-				// Equipment
-				return 9999;
-			}
-
-			return -1;
+			g_damage_hook.invoke<void>(target, inflictor, attacker, dir, pt, damage, dflags, meansOfDeath, weap, p10, hitLoc, p12, p13, p14);
 		}
 
 		void Bullet_Endpos(unsigned int* randSeed, float spread, float p3, float* endpoint, float* dir, float p6, float p7, weaponParms parms, float p9) {
@@ -452,7 +445,7 @@ namespace trickshot {
 			sv_startmap_hook.create(0x1404702F0, SV_StartMapForParty);
 			sv_maprestart_hook.create(0x14046F3B0, SV_MapRestart);
 			clientspawn_hook.create(0x140387b20, ClientSpawn);
-			bg_getdamage_hook.create(0x14023e260, BG_GetDamage);
+			g_damage_hook.create(0x140394df0, G_Damage);
 			bg_getsurfacepenetrationdepth_hook.create(0x140238fd0, BG_GetSurfacePenetrationDepth);
 			bullet_endpos_hook.create(0x1403762c0, Bullet_Endpos);
 
