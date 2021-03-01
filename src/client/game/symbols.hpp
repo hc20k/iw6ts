@@ -192,6 +192,7 @@ namespace game
 
 	WEAK symbol<int (mp::playerState_s*, int, bool, int stock, int clip)> Add_Ammo{ 0, 0x140399e50 };
 	WEAK symbol<void(mp::gentity_s*, mp::gentity_s*, mp::gentity_s*, int, int, unsigned int, bool, float*, int, int)> player_die{ 0, 0x140396920 };
+	WEAK symbol<unsigned int(Weapon, char)> BG_GetWeaponClass{ 0, 0x140240e20 };
 
 	/***************************************************************
 	 * Variables

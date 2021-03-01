@@ -18,7 +18,7 @@ namespace branding
 
 		void dvar_set_string_stub(game::dvar_t* dvar, const char* string)
 		{
-			game::Dvar_SetString(dvar, utils::string::va("IW6x %s (game %s)", VERSION, string));
+			game::Dvar_SetString(dvar, utils::string::va("IW6TS %s (game %s)", VERSION, string));
 		}
 
 		const char* ui_get_formatted_build_number_stub()
@@ -79,7 +79,7 @@ namespace branding
 					const auto y = 0;
 					const auto scale = 0.5f;
 					float color[4] = { 0.666f, 0.666f, 0.666f, 0.666f };
-					const auto* text = "IW6x: " VERSION " ^:TS";
+					const auto* text = "IW6^:TS^7 " VERSION;
 
 					auto* font = game::R_RegisterFont("fonts/normalfont");
 					if (!font) return;

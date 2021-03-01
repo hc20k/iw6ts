@@ -36,7 +36,7 @@ namespace discord
 				const auto* gametype = game::UI_LocalizeGametype(game::Dvar_FindVar("ui_gametype")->current.string);
 				const auto* map = game::UI_LocalizeMapname(game::Dvar_FindVar("ui_mapname")->current.string);
 
-				discord_presence.details = utils::string::va("%s on %s", gametype, map);
+				discord_presence.details = utils::string::va("Trickshotting on %s", map);
 
 				auto* const host_name = reinterpret_cast<char*>(0x14187EBC4);
 				utils::string::strip(host_name, host_name, static_cast<int>(strlen(host_name)) + 1);

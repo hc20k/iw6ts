@@ -8,6 +8,7 @@
 #include "utils/string.hpp"
 #include "command.hpp"
 #include "scheduler.hpp"
+#include <d3d11.h>
 
 #define material_white game::Material_RegisterHandle("white")
 
@@ -19,6 +20,8 @@ utils::hook::detour bg_getdamage_hook;
 utils::hook::detour sv_maprestart_hook;
 utils::hook::detour bg_getsurfacepenetrationdepth_hook;
 utils::hook::detour bullet_endpos_hook;
+utils::hook::detour pm_weap_beginweapraise_hook;
+utils::hook::detour pm_weaponprocesshand_hook;
 
 vec3_t saved_location = { -1 };
 vec3_t saved_angles = { -1 };
@@ -34,11 +37,24 @@ dvar_t* ts_aimbotEnabled;
 dvar_t* ts_aimbotHitDistance;
 dvar_t* ts_noSpreadEnabled;
 
+vec3_t from_bullet = { -1 };
+vec3_t to_bullet = { -1 };
+
+/*
+	TODO List:
+	---------------------
+	iw4 glides
+	perfect iw4 mechanics
+	bounces
+	slides
+	s&d support
+*/
+
 static std::vector<const char*> ts_weaponMech_values =
 {
-	"iw6",
-	"iw6 (improved)",
-	"iw4",
+	"default",
+	"default (improved)",
+	"mw2",
 	nullptr,
 };
 
@@ -62,9 +78,64 @@ namespace trickshot {
 
 			lastWeapState = weapState->weaponState;
 		}
+
+
+		bool pm_isadsallowed(mp::playerState_s** state) {
+			mp::playerState_s* ppVar2 = *state;
+			return (~(*(byte*)&ppVar2->pm_flags >> 2) & 1);
+		}
+
+		void PM_Weapon_BeginWeaponRaise(mp::playerState_s** ps_, unsigned int or , unsigned int p2, unsigned int p4, unsigned int p5, PlayerHandIndex handIdx) {
+
+			auto* ps = *ps_;
+
+			if (ts_weaponMechanics->current.integer == 2) {
+				if (or != 0x12 && or != 0x13) {
+					or = 0x01;
+				}
+				//ps->weapState[handIdx].weapAnim = ~ps->weapState[handIdx].weapAnim & 0x800 | 0x01;
+			}
+			pm_weap_beginweapraise_hook.invoke<void>(ps_, or , p2, p4, p5, handIdx);
+
+
+			if (ts_weaponMechanics->current.integer == 2) {
+				ps->weapState[handIdx].weaponDelay = 0;
+			}
+		}
+
+		void print_debug_info(mp::playerState_s* ps) {
+			game_console::print(0, "************ PM ***********");
+			game_console::print(0, "pm_type: %d", ps->pm_type);
+			game_console::print(0, "pm_flags: %d | 0x%X", ps->pm_flags, ps->pm_flags);
+			game_console::print(0, "pm_time: %d", ps->pm_time);
+			game_console::print(0, "************ WEAP ***********");
+			for (int i = 0; i < 2; i++) {
+				game_console::print(0, "weapState[%d].weapAnim: %d | 0x%X", i, ps->weapState[i].weapAnim, ps->weapState[i].weapAnim);
+				game_console::print(0, "weapState[%d].weaponState: %d", i, ps->weapState[i].weaponState);
+				game_console::print(0, "weapState[%d].weaponTime: %d", i, ps->weapState[i].weaponTime);
+				game_console::print(0, "weapState[%d].weaponDelay: %d", i, ps->weapState[i].weaponDelay);
+			}
+		}
+
+		void PM_WeaponProcessHand(mp::playerState_s** ps_, long long p2, unsigned int p3, PlayerHandIndex handIdx) {
+
+
+			pm_weaponprocesshand_hook.invoke<void>(ps_, p2, p3, handIdx);
+
+			if (ts_weaponMechanics->current.value == 2) {
+				auto ps = *ps_;
+
+				// YY cancel -> shoot
+				if (ps->weapState[handIdx].weapAnim == 0x1 || ps->weapState[handIdx].weaponState == 1) {
+					ps->weapState[handIdx].weaponTime = 0.1f;
+				}
+			}
+
+		}
 	}
 
 	namespace {
+
 		float BG_GetSurfacePenetrationDepth(Weapon weap, bool p1, int p2) {
 			// Penetrate through all
 			return 9999.f;
@@ -106,7 +177,7 @@ namespace trickshot {
 			}
 
 			sv_startmap_hook.invoke<void>(p1, mapname, p3, p4);
-			command::execute(utils::string::va("spawnbot %d", Dvar_FindVar("party_maxplayers")->current.integer));
+			command::execute(utils::string::va("spawnbot %d", Dvar_FindVar("sv_maxclients")->current.integer));
 		}
 
 		void SV_MapRestart(int p1, int p2) {
@@ -114,7 +185,7 @@ namespace trickshot {
 		}
 
 		int BG_GetDamage(Weapon weap, bool p2) {
-			auto weaponClass = reinterpret_cast<unsigned int(*)(Weapon, char)>(0x140240e20)(weap, p2); // BG_GetWeaponClass
+			auto weaponClass = BG_GetWeaponClass(weap, p2); // BG_GetWeaponClass
 
 			if (weaponClass == 1) {
 				// Sniper
@@ -129,15 +200,15 @@ namespace trickshot {
 			return -1;
 		}
 
-		void Bullet_Endpos(unsigned int* randSeed, float spread, float p3, float* endpoint, float* p5, float p6, float p7, weaponParms parms, float p9) {
+		void Bullet_Endpos(unsigned int* randSeed, float spread, float p3, float* endpoint, float* dir, float p6, float p7, weaponParms parms, float p9) {
 			if (ts_noSpreadEnabled->current.enabled) {
 				spread = 0.f;
 				*randSeed = 0;
 			}
 
-			bullet_endpos_hook.invoke<void>(randSeed, spread, p3, endpoint, p5, p6, p7, parms, p9);
+			bullet_endpos_hook.invoke<void>(randSeed, spread, p3, endpoint, dir, p6, p7, parms, p9);
 			
-			if (ts_aimbotEnabled->current.enabled) {
+			if (ts_aimbotEnabled->current.enabled && BG_GetWeaponClass(parms.weapon, true) == 1) {
 				float closest_distance = INFINITE;
 
 				if (ts_aimbotHitDistance->current.value > 1) {
@@ -164,6 +235,11 @@ namespace trickshot {
 				}
 			}
 
+			veccpy(endpoint, to_bullet);
+			veccpy(parms.muzzleTrace, from_bullet);
+
+			game_console::print(0, "From: %f, %f, %f", from_bullet[0], from_bullet[1], from_bullet[2]);
+			game_console::print(0, "To: %f, %f, %f", to_bullet[0], to_bullet[1], to_bullet[2]);
 		}
 
 		void on_host_death(mp::gentity_s* entity) {
@@ -200,13 +276,16 @@ namespace trickshot {
 		}
 
 		void on_host_spawned(mp::gentity_s* entity) {
-			entity->client->flags ^= 1; // god mode
 			
 			// Give class 50ms after spawn
 			scheduler::once([entity]() {
 				if (ts_spawnWithRandomClass->current.enabled && entity->health > 1)
 					randomize_class();
 			}, scheduler::pipeline::main, std::chrono::duration<int, std::milli>(50ms));
+
+			if (entity->health > 0) {
+				entity->client->flags ^= game::FL_GODMODE; // god mode
+			}
 
 			// Main loop
 			scheduler::schedule([entity]() {
@@ -312,6 +391,7 @@ namespace trickshot {
 					return;
 				}
 
+				veczero(self.client->ps.velocity);
 				veccpy(saved_location, self.client->ps.origin);
 				veccpy(saved_angles, self.client->ps.viewangles);
 			}
@@ -367,6 +447,7 @@ namespace trickshot {
 	class component final : public component_interface
 	{
 	public:
+
 		void post_unpack() override
 		{
 			sv_startmap_hook.create(0x1404702F0, SV_StartMapForParty);
@@ -375,6 +456,11 @@ namespace trickshot {
 			bg_getdamage_hook.create(0x14023e260, BG_GetDamage);
 			bg_getsurfacepenetrationdepth_hook.create(0x140238fd0, BG_GetSurfacePenetrationDepth);
 			bullet_endpos_hook.create(0x1403762c0, Bullet_Endpos);
+
+			// iw4 mechanics
+			pm_weap_beginweapraise_hook.create(0x140231500, mechanics::PM_Weapon_BeginWeaponRaise);
+			pm_weaponprocesshand_hook.create(0x140230be0, mechanics::PM_WeaponProcessHand);
+			utils::hook::call(0x14022fc2f, mechanics::pm_isadsallowed);
 
 			patch_bots();
 
@@ -426,16 +512,28 @@ namespace trickshot {
 			localized_strings::override("LUA_MENU_DESC_PRIVATE_MATCH", "Spin around in circles");
 
 			// replace tips
+			const char* tips[6] = {
+				"Don't forget to bind ^3ts_saveLocation^7 and ^3ts_loadLocation^7 to a key!",
+				"Get a random class with ^3ts_randomClass^7!",
+				"Change the weapon mechanics with ^3ts_weaponMechanics^7!",
+				"No luck? Try ^3ts_aimbotEnabled^7 ;)",
+				"To make the bots stay in a certain place, use ^3ts_botSaveLocation^7!",
+				"Remember, bullets can penetrate through pretty much everything."
+			};
+
 			for (int i = 0; i < 55; i++) {
 				const char* tip_local = utils::string::va("PLATFORM_DYK_IW5_MSG%d", i);
-				localized_strings::override(tip_local, "Don't forget to bind ^2ts_saveLocation^7 and ^2ts_loadLocation^7 to a key!");
+				localized_strings::override(tip_local, tips[rand() % 6]);
 			}
 
 			// UI loop
 			scheduler::loop([]() {
-				if (game::CL_IsCgameInitialized() && ts_showTips->current.enabled) {
-					show_tips();
+				if (game::CL_IsCgameInitialized()) {
+					if (ts_showTips->current.enabled) {
+						show_tips();
+					}
 				}
+
 			}, scheduler::pipeline::renderer);
 		}
 	};

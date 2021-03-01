@@ -2,6 +2,7 @@
 
 #define veccpy(a,b) b[0] = a[0]; b[1] = a[1]; b[2] = a[2]; 
 #define vecdist(v0,v1) sqrt((v1[1] - v0[1]) * (v1[1] - v0[1]) + (v1[0] - v0[0]) * (v1[0] - v0[0]) + (v1[2] - v0[2])* (v1[2] - v0[2]))
+#define veczero(a) a[0] = 0; a[1] = 0; a[2] = 0;
 
 const char* random_primary[4] = {
 	"iw6_usr_mp_barrelbored_fmj_usrscope",

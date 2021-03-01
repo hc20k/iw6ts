@@ -16,6 +16,7 @@ namespace game
 		int freeFlags;
 	};
 
+
 	enum $219904913BC1E6DB920C78C8CC0BD8F1
 	{
 		FL_GODMODE = 0x1,
@@ -192,6 +193,11 @@ namespace game
 		DW_LIVE_DISCONNECTED = 0x0,
 		DW_LIVE_CONNECTING = 0x1,
 		DW_LIVE_CONNECTED = 0x2,
+	};
+
+	struct GfxPointVertex {
+		vec3_t xyz;
+		float color[4];
 	};
 
 	enum bdLobbyErrorCode : uint32_t
@@ -1864,6 +1870,32 @@ namespace game
 		int baseTechType;
 		int emissiveTechType;
 		int forceTechType;
+	};
+
+	struct pmove_t {
+		playerState_s* ps;
+		usercmd_s cmd;
+		usercmd_s oldcmd;
+		int tracemask;
+		int numtouch;
+		int touchents[32];
+		Bounds bounds;
+		float speed;
+		int contactEntity;
+		int proneChange;
+		bool mantleStarted;
+		vec3_t mantleEndPos;
+		int mantleDuration;
+		vec3_t meleeEntOrigin;
+		vec3_t meleeEntVelocity;
+		int viewChangeTime;
+		float viewChange;
+		float fTorsoPitch;
+		float fWaistPitch;
+		int remoteTurretFireTime;
+		int lastUpdateCMDServerTime;
+		unsigned int groundSurfaceType;
+		unsigned char handler;
 	};
 
 	union XAssetHeader
