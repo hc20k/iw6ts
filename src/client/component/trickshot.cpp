@@ -119,10 +119,9 @@ namespace trickshot {
 
 		void PM_WeaponProcessHand(mp::playerState_s** ps_, long long p2, unsigned int p3, PlayerHandIndex handIdx) {
 
-
 			pm_weaponprocesshand_hook.invoke<void>(ps_, p2, p3, handIdx);
 
-			if (ts_weaponMechanics->current.value == 2) {
+			if (ts_weaponMechanics->current.integer == 2) {
 				auto ps = *ps_;
 
 				// YY cancel -> shoot
