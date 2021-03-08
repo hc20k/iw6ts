@@ -9,6 +9,11 @@ namespace game
 	typedef vec_t vec3_t[3];
 	typedef vec_t vec4_t[4];
 
+	struct WeaponCompleteDef {
+		char* szInternalName;
+		char pad[288];
+	};
+
 	struct XZoneInfo
 	{
 		const char* name;
@@ -1896,6 +1901,17 @@ namespace game
 		int lastUpdateCMDServerTime;
 		unsigned int groundSurfaceType;
 		unsigned char handler;
+	};
+
+	struct TracerInfo {
+		Material* material;
+		float clipDist;
+		float length;
+		float width;
+		float screwDist;
+		float screwRadius;
+		float colors[5][4];
+		int isClientEmitter;
 	};
 
 	union XAssetHeader

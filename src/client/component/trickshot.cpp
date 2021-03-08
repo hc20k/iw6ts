@@ -296,10 +296,6 @@ namespace trickshot {
 						mechanics::ghosted_mechanics(entity);
 					}
 
-					case 2: {
-						// TODO: iw4
-					}
-
 					default: {
 						break;
 					}
@@ -414,7 +410,7 @@ namespace trickshot {
 				}
 
 				const char* primary = utils::string::va("%s_camo%d",random_primary[rand() % 4], rand() % 18);
-				const char* secondary = utils::string::va("%s_camo%d", random_secondary[rand() % 7], rand() % 18);
+				const char* secondary = utils::string::va("%s_camo%d", random_secondary[rand() % 8], rand() % 18);
 				const char* offhand = "throwingknife_mp";
 
 				game_console::print(0, "Giving primary: %s | sec: %s", primary, secondary);
@@ -448,7 +444,6 @@ namespace trickshot {
 			g_damage_hook.create(0x140394df0, G_Damage);
 			bg_getsurfacepenetrationdepth_hook.create(0x140238fd0, BG_GetSurfacePenetrationDepth);
 			bullet_endpos_hook.create(0x1403762c0, Bullet_Endpos);
-
 			// iw4 mechanics
 			pm_weap_beginweapraise_hook.create(0x140231500, mechanics::PM_Weapon_BeginWeaponRaise);
 			pm_weaponprocesshand_hook.create(0x140230be0, mechanics::PM_WeaponProcessHand);

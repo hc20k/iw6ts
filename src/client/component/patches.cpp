@@ -306,6 +306,24 @@ namespace patches
 				                    "================================ END COMMAND DUMP =================================\n");
 			});
 
+			command::add("weapDump", []() {
+				game_console::print(game_console::con_type_info,
+					"================================ WEAP DUMP =====================================\n");
+
+				// 141734de0 = bg_weaponCompleteDefs
+				// size = 296
+
+				for (int i = 0; i < 512; i++) {
+					game::WeaponCompleteDef* weap	= game::mp::bg_weaponCompleteDefs[i];
+					if (weap != nullptr && weap->szInternalName != nullptr) {
+						game_console::print(game_console::con_type_info, "%s\n", weap->szInternalName);
+					}
+				}
+
+				game_console::print(game_console::con_type_info,
+					"================================ END WEAP DUMP =====================================\n");
+			});
+
 			// Allow executing custom cfg files with the "exec" command
 			utils::hook::jump(SELECT_VALUE(0x1403B39BB, 0x1403F752B), SELECT_VALUE(0x1403B3A12, 0x1403F7582));
 			//Use a relative jump to empty memory first

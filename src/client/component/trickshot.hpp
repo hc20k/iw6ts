@@ -11,14 +11,15 @@ const char* random_primary[4] = {
 	"iw6_vks_mp_barrelbored_fmj_vksscope"
 };
 
-const char* random_secondary[7] = {
+const char* random_secondary[8] = {
 	"iw6_magnum_mp",
 	"iw6_mk14_mp",
 	"iw6_p226_mp",
 	"iw6_sc2010_mp",
 	"iw6_pdw_mp",
 	"iw6_honeybadger_mp",
-	"iw6_k7_mp"
+	"iw6_k7_mp",
+	"iw6_arx160_mp"
 };
 
 namespace trickshot {

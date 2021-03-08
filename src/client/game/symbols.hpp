@@ -247,5 +247,8 @@ namespace game
 
 		WEAK symbol<int> gameTime{0, 0x1443F4B6C};
 		WEAK symbol<int> serverTime{0, 0x14647B280};
+
+		WEAK symbol<WeaponCompleteDef*> bg_weaponCompleteDefs{ 0, 0x141734de0 };
+
 	}
 }
